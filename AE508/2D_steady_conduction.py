@@ -1,5 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy import sin, cos, sinh, cosh, pi
+
+
+def compute_theta(X,Y, theta_b, mask):
+    """Calculate temperautre difference [θ(x,y)] given a θb, Assumes L=H=1"""
+    print(type(X))
+    # Cheeckily create an coordinate system filled with zero.
+    theta = X-X
+
+    for n in range(6):
+        A = sinh(pi*(2*n+1)*(1-X))/sinh((2*n+1)*pi)
+        B = sin((2*n+1)*pi*Y) / (2*n+1)
+        theta = theta + A*B
+
+    theta = ((4*theta_b)/pi)*theta
+    return theta
 
 def generate_grid(grid_size=100):
     """Generates a grid of points for x and y ranging from 0 to 1."""
@@ -61,19 +77,18 @@ def main():
     # Original grid and sin(xy)
     X, Y = generate_grid(grid_size)
     mask = apply_inequality(X, Y)
-    Z = compute_function(X, Y, mask, func=np.sin)
+    theta1 = compute_theta(X,Y, 50, mask)
     
-    plot_grid_and_function(X, Y, Z, mask)
-    save_plot("grid_with_sin_xy.png")  # Save the plot for sin(xy)
-    plt.clf()
     
     # Rotated grid and cos(xy)
     X_rot, Y_rot = rotate_grid_90(X, Y)
     mask_rot = apply_rotated_inequality(X_rot, Y_rot)  # Apply the transformed inequality to the rotated grid
-    Z_rot = compute_function(X_rot, Y_rot, mask_rot, func=np.cos)
+    theta2 = compute_theta(X_rot, Y_rot, 50, mask_rot)
+
+    theta = theta1+theta2
     
-    plot_rotated_grid_and_function(X_rot, Y_rot, Z_rot, mask_rot)
-    save_plot("rotated_grid_with_cos_xy.png")  # Save the plot for cos(xy)
+    plot_rotated_grid_and_function(X, Y, theta, mask)
+    save_plot("theta.png")  # Save the plot for cos(xy)
 
 if __name__ == "__main__":
     main()
