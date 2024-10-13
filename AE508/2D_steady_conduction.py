@@ -36,7 +36,7 @@ def apply_inequality(X, Y):
 
 def apply_rotated_inequality(X_rot, Y_rot):
     """Applies the transformed inequality for rotated data: y > x - 1."""
-    return Y_rot < (-X_rot + 1)
+    return Y_rot > (X_rot - 1)
 
 def compute_function(X, Y, mask, func=np.sin):
     """Computes the function (e.g., sin(xy), cos(xy)) only for the points that satisfy the mask."""
@@ -54,14 +54,14 @@ def plot_rotated_grid_and_function(X_rot, Y_rot, Z_rot, mask_rot, label="Rotated
     """Plots the rotated grid points and function cos(xy) with mask applied."""
     plt.scatter(X_rot[mask_rot], Y_rot[mask_rot], c='red', marker='x', label=label)
     plt.contourf(X_rot, Y_rot, Z_rot, cmap='plasma', alpha=0.6)  # Contour plot of cos(xy)
-    plt.colorbar(label="cos(xy)")
+    plt.colorbar(label="θ(x,y)")
 
 def save_plot(filename="grid_plot.png"):
     """Saves the plot to a file."""
-    plt.title("Grid of Points and Function")
+    plt.title("θ(x,y)")
     plt.xlabel("X-axis")
     plt.ylabel("Y-axis")
-    plt.grid(True)
+    plt.grid(False)
     
     # Set the aspect ratio to be square
     plt.gca().set_aspect('equal', adjustable='box')
@@ -82,7 +82,7 @@ def main():
     
     # Rotated grid and cos(xy)
     X_rot, Y_rot = rotate_grid_90(X, Y)
-    mask_rot = apply_rotated_inequality(X_rot, Y_rot)  # Apply the transformed inequality to the rotated grid
+    mask_rot = apply_inequality(X_rot, Y_rot)  # Apply the transformed inequality to the rotated grid
     theta2 = compute_theta(X_rot, Y_rot, 50, mask_rot)
 
     theta = theta1+theta2
