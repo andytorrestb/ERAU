@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 
 # Function to perform the finite difference method with specified grid size
 def solve_heat_conduction(nx, ny):
-    dx = dy = 0.25 / (nx - 1)  # Spacing between nodes
+    dx = dy = dz = 0.25 / (nx - 1)  # Spacing between nodes, assume dz = dx = dy
+    k = 0.25  # Thermal conductivity (W/mK)
     T = np.zeros((nx, ny))
 
     # Boundary conditions
@@ -34,40 +35,80 @@ def solve_heat_conduction(nx, ny):
         T = T_new
         iteration += 1
 
-    return T, iteration
+    return T, dx, dy, dz, k
 
-# Mesh sensitivity study with different grid sizes
-grid_sizes = [10, 20, 40, 80]
-iterations_list = []
-max_temp_list = []
+# Solve for the finest grid
+best_grid_size = 80  # Set finest grid size
+T_best, dx, dy, dz, k = solve_heat_conduction(best_grid_size, best_grid_size)
 
-for size in grid_sizes:
-    T, iterations = solve_heat_conduction(size, size)
-    iterations_list.append(iterations)
-    max_temp_list.append(np.max(T))  # Save the max temperature for sensitivity analysis
+# Calculate heat transfer in x- and y-directions using Fourier's law
+qx = np.zeros_like(T_best)
+qy = np.zeros_like(T_best)
 
-# Plotting the temperature distribution for the finest grid (largest size)
-best_grid_size = grid_sizes[-1]  # The finest grid is the last one in the list
-T_best, _ = solve_heat_conduction(best_grid_size, best_grid_size)
+# Cross-sectional area A = dz * dx (or dy)
+A = dz * dx
 
-# Create X, Y coordinates (0 to 0.25)
+# Temperature gradient calculation
+for i in range(1, best_grid_size-1):
+    for j in range(1, best_grid_size-1):
+        # dT/dx (central difference)
+        dT_dx = (T_best[i+1, j] - T_best[i-1, j]) / (2 * dx)
+        # dT/dy (central difference)
+        dT_dy = (T_best[i, j+1] - T_best[i, j-1]) / (2 * dy)
+        
+        # qx and qy
+        qx[i, j] = -k * A * dT_dx
+        qy[i, j] = -k * A * dT_dy
+
+# Calculate total heat flux at the left boundary using forward difference
+for j in range(1, best_grid_size-1):
+    dT_dx_left = (T_best[1, j] - T_best[0, j]) / dx  # Forward difference
+    qx[0, j] = -k * A * dT_dx_left
+
+# Calculate total heat flux through the left boundary
+total_heat_flux_left_boundary = np.sum(qx[0, :])  # Summing heat flux along the left boundary
+
+# Output the total heat flux at the left boundary
+print(f'Total heat flux through the left boundary: {total_heat_flux_left_boundary} W/m^2')
+
+# Plot temperature distribution
+plt.figure(figsize=(6, 6))
 x = np.linspace(0, 0.25, best_grid_size)
 y = np.linspace(0, 0.25, best_grid_size)
 X, Y = np.meshgrid(x, y)
-
-plt.figure(figsize=(6, 6))  # Set the figure size to square
 contour = plt.contourf(X, Y, T_best, cmap='hot', levels=50)
 plt.colorbar(contour, label="Temperature (°C)")
 plt.title(f'Temperature Distribution for Grid Size {best_grid_size}x{best_grid_size}')
 plt.xlabel('X (m)')
 plt.ylabel('Y (m)')
-
-# Ensure the aspect ratio is square
 plt.gca().set_aspect('equal', adjustable='box')
-
-# Save the plot for the finest grid
-file_path_best_grid = 'finest_grid_temperature_distribution_square.png'
 plt.tight_layout()
-plt.savefig(file_path_best_grid)
+plt.savefig('temperature_distribution.png')
 
-print(f'Temperature distribution for finest grid saved to: {file_path_best_grid}')
+# Plot heat transfer in the x-direction
+plt.figure(figsize=(6, 6))
+plt.contourf(qx, cmap='coolwarm', levels=50)
+plt.colorbar(label="Heat Transfer (W) in x-direction")
+plt.title(f'Heat Transfer in X-Direction for Grid Size {best_grid_size}x{best_grid_size}')
+plt.xlabel('X (m)')
+plt.ylabel('Y (m)')
+plt.gca().set_aspect('equal', adjustable='box')
+plt.tight_layout()
+plt.savefig('heat_transfer_x_direction.png')
+
+# Plot heat transfer in the y-direction
+plt.figure(figsize=(6, 6))
+plt.contourf(qy, cmap='coolwarm', levels=50)
+plt.colorbar(label="Heat Transfer (W) in y-direction")
+plt.title(f'Heat Transfer in Y-Direction for Grid Size {best_grid_size}x{best_grid_size}')
+plt.xlabel('X (m)')
+plt.ylabel('Y (m)')
+plt.gca().set_aspect('equal', adjustable='box')
+plt.tight_layout()
+plt.savefig('heat_transfer_y_direction.png')
+
+# Save heat transfer results to local files
+np.savetxt("heat_transfer_x_direction.csv", qx, delimiter=",", header="Heat Transfer (W) in X-direction")
+np.savetxt("heat_transfer_y_direction.csv", qy, delimiter=",", header="Heat Transfer (W) in Y-direction")
+
+print('Results saved to local files: "temperature_distribution.png", "heat_transfer_x_direction.png", "heat_transfer_y_direction.png", and corresponding CSV files.')
