@@ -130,7 +130,7 @@ def main() -> None:
         Me = flow_calc.solve_supersonic_mach_for_area_ratio(25)
         P2P1 = float(flow_calc.pressure_ratio_mach(Me))
         a = (gamma_mixture-1)/gamma_mixture
-        Isp = (2*Cp_mixture*T1*(1-(P2P1)**a))**0.5
+        # Isp = (2*Cp_mixture*T1*(1-(P2P1)**a))**0.5
 
         MW_O2 = chemical_properties.loc['O2', 'MolecularWeight']
         MW_H2 = chemical_properties.loc['H2', 'MolecularWeight']
@@ -141,15 +141,25 @@ def main() -> None:
         C_star = np.sqrt((R_m*T1)/g)*(1+0.5*(g-1))**(g/(g-1)-0.5)
 
         # Calculate equivalent exhaust velocity (c)
+        C = ((2*g*R_m*T1)/(g-1)*(1-P2P1**((g-1)/g)))**0.5  # Exhaust velocity in m/s
         g_0 = 9.81  # Gravitational acceleration (m/s²)
-        C = Isp * g_0  # Exhaust velocity in m/s
+        I_sp = C/g_0
 
-        CT = C_star/C
+        CT = C/C_star
 
+        MW_m = 1000*MW_m
         # Append the results to the list
         results_list.append({
             'r': r,
             'phi': phi,
+            'I_sp (s)': I_sp,
+            'γ': gamma_mixture,
+            'CT': CT,
+            'Cp (kJ/kg·K)': Cp_mixture,
+            'T1': T1,
+            'MW': MW_m,
+            'C^*': C_star,
+            'C (m/s)': C,
             # 'Oxidizer-to-Fuel Ratio': oxidizer_fuel_ratio,
             # 'Mass H2 (kg)': mass_H2,
             # 'Mass O2 (kg)': mass_O2,
@@ -157,15 +167,9 @@ def main() -> None:
             # 'Mole Fraction H2': mole_fraction_H2_remaining,
             # 'Mass Fraction H2O': mass_fraction_H2O,
             # 'Mass Fraction H2': mass_fraction_H2_remaining,
-            'Cp (kJ/kg·K)': Cp_mixture,
-            'Gamma (γ)': gamma_mixture,
-            'R_m': R_m,
-            'T1': T1,
-            'MW_m': MW_m,
-            'C_star': C_star,
-            'Isp': Isp,
-            'C (m/s)': C,
-            'CT': CT
+            # 'R_m': R_m,
+            # 'P2P1': P2P1,
+            # 'Qf': Qf
         })
 
     # Convert the list to a DataFrame
@@ -174,6 +178,7 @@ def main() -> None:
     # Display the results DataFrame
     print("\nResults DataFrame:")
     print(results_df)
+    results_df.to_csv('combustion_results.csv', index=False)
 
 # Call the main function
 if __name__ == "__main__":
